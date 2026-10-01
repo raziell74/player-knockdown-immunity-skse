@@ -16,6 +16,7 @@ add_commonlibsse_plugin(
     USE_ADDRESS_LIBRARY
     SOURCES
         src/plugin.cpp
+        src/Hooks/KnockdownImmunity.cpp
         src/Settings/Settings.cpp)
 
 # SKSEPlugin_Version / SKSEPlugin_Query are declared in src/plugin.cpp as

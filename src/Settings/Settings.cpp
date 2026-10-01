@@ -46,6 +46,22 @@ namespace
 		return a_valid ? level : spdlog::level::info;
 	}
 
+	[[nodiscard]] bool ParseBool(std::string_view a_value, bool a_default, bool& a_valid)
+	{
+		const auto lowered = ToLower(std::string(a_value));
+		if (lowered == "true" || lowered == "1" || lowered == "yes") {
+			a_valid = true;
+			return true;
+		}
+		if (lowered == "false" || lowered == "0" || lowered == "no") {
+			a_valid = true;
+			return false;
+		}
+
+		a_valid = false;
+		return a_default;
+	}
+
 	void ApplyLevel(spdlog::level::level_enum a_level)
 	{
 		spdlog::set_level(a_level);
@@ -72,7 +88,7 @@ namespace Settings
 		if (path.empty() || !std::filesystem::exists(path)) {
 			ApplyLevel(g_config.level);
 			SKSE::log::info(
-				"INI not found at {}; using defaults (Level=info)",
+				"INI not found at {}; using defaults (Enabled=true CombatOnly=true Level=info)",
 				path.empty() ? "<unknown>" : path.string());
 			return;
 		}
@@ -82,22 +98,36 @@ namespace Settings
 		const auto rc = ini.LoadFile(path.string().c_str());
 		if (rc < 0) {
 			ApplyLevel(g_config.level);
-			SKSE::log::warn("Failed to load INI {}; using defaults (Level=info)", path.string());
+			SKSE::log::warn(
+				"Failed to load INI {}; using defaults (Enabled=true CombatOnly=true Level=info)",
+				path.string());
 			return;
 		}
 
+		bool enabledValid = true;
+		bool combatOnlyValid = true;
 		bool levelValid = true;
+		g_config.enabled = ParseBool(ini.GetValue("General", "Enabled", "true"), true, enabledValid);
+		g_config.combatOnly = ParseBool(ini.GetValue("General", "CombatOnly", "true"), true, combatOnlyValid);
 		g_config.level = ParseLevel(ini.GetValue("Logging", "Level", "info"), levelValid);
 
 		ApplyLevel(g_config.level);
 
+		if (!enabledValid) {
+			SKSE::log::warn("Invalid General.Enabled in {}; using true", path.string());
+		}
+		if (!combatOnlyValid) {
+			SKSE::log::warn("Invalid General.CombatOnly in {}; using true", path.string());
+		}
 		if (!levelValid) {
 			SKSE::log::warn("Invalid Logging.Level in {}; using info", path.string());
 		}
 
 		SKSE::log::info(
-			"Logging settings: file={} level={}",
+			"Settings: file={} enabled={} combatOnly={} level={}",
 			path.string(),
+			g_config.enabled,
+			g_config.combatOnly,
 			spdlog::level::to_string_view(g_config.level));
 	}
 }

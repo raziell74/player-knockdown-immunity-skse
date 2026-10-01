@@ -1,5 +1,6 @@
 #include "PCH.h"
 
+#include "Hooks/KnockdownImmunity.h"
 #include "Settings/Settings.h"
 
 SKSE_EXPORT constinit SKSE::PluginVersionData SKSEPlugin_Version = []() noexcept {
@@ -33,6 +34,8 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 	REL::Module::reset();
 	SKSE::Init(a_skse);
 	Settings::Load();
+	SKSE::AllocTrampoline(256);
+	KnockdownImmunity::Install();
 
 	const auto* plugin = SKSE::PluginVersionData::GetSingleton();
 	SKSE::log::info("{} v{} loaded", plugin->GetPluginName(), plugin->GetPluginVersion().string());
